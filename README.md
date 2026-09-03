@@ -4,41 +4,61 @@ A 1.28" round LCD on the desk that shows how much of your Claude subscription
 you have burned through — the **5-hour session** and the **weekly** budget, as
 two rings, updated over Wi-Fi.
 
-<!-- Add photos here, e.g.:
-<p align="center">
-  <img src="docs/device.jpg" width="360" alt="The display showing both rings">
-  <img src="docs/setup.jpg"  width="360" alt="Pi and display on the desk">
-</p>
--->
-
-**Why two devices?** The usage numbers only exist inside the Claude Code CLI,
+The usage numbers only exist inside the Claude Code CLI,
 which needs a logged-in machine — an ESP32 cannot run it. So a Raspberry Pi
 that is already on anyway polls the CLI and serves the two numbers as tiny
-JSON on the LAN; the board just draws them.
-
-**Why not read usage on the board directly?** There is no public usage API.
-`claude -p "/usage"` is answered *inside* the CLI (no model turn, no tokens,
+JSON on the LAN and the board just draws them. Why not read usage on the board directly? There is no public usage API. `claude -p "/usage"` is answered *inside* the CLI (no model turn, no tokens,
 ~300 ms) and returns the **account-wide** figures, so usage from your laptop,
 phone and any other device is included.
+
+<p align="center">
+  <img src="docs/images/5-hour.png" width="200" alt="The display showing both rings">
+  <img src="docs/images/week.png"  width="200" alt="Pi and display on the desk">
+</p>
+
+<p align="center">
+  <i>ESP32 with touch display showing token utilization and reset times for the 5 hour (left) and weekly (right) period.</i>
+</p>
 
 ---
 
 ## How it works
 
 ```mermaid
+---
+config:
+  theme: 'base'
+  themeVariables:
+    primaryColor: '#dbeafe'
+    primaryTextColor: '#1e3a8a'
+    primaryBorderColor: '#3b82f6'
+    lineColor: '#57606a'
+    edgeLabelBackground: '#ffffff'
+---
 flowchart LR
     subgraph PI["Raspberry Pi (always on)"]
-        CLI["claude -p /usage<br/><i>account-wide %</i>"]
-        D["usage_daemon.py<br/>FastAPI :8000"]
+        CLI("claude -p /usage<br/><i>account-wide %</i>")
+        D("usage_daemon.py<br/>FastAPI :8000")
         CLI -->|"every 300 s<br/>background thread"| D
     end
 
     subgraph ESP["ESP32-C3 + round LCD"]
-        APP["main.py<br/>LVGL 9 rings"]
+        APP("main.py<br/>LVGL 9 rings")
     end
 
-    D -->|"GET /usage → ~112 B JSON<br/>every 180 s over LAN"| APP
+    D ==>|"GET /usage → ~112 B JSON<br/>every 180 s over LAN"| APP
     USER(("tap")) -.->|"swap which ring<br/>is the big number"| APP
+
+    classDef pi fill:#dbeafe,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a
+    classDef esp fill:#d1fae5,stroke:#10b981,stroke-width:1.5px,color:#065f46
+    classDef tapNode fill:#f3e8ff,stroke:#a855f7,stroke-width:1.5px,color:#6b21a8
+
+    class CLI,D pi
+    class APP esp
+    class USER tapNode
+
+    style PI fill:#f8fbff,stroke:#93c5fd,stroke-width:1.5px
+    style ESP fill:#f4fdf9,stroke:#6ee7b7,stroke-width:1.5px
 ```
 
 Two design points that follow from the hardware:
