@@ -1,0 +1,43 @@
+# Install on the Raspberry Pi as a *system* service that runs as you:
+#   sudo cp claude-usage.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now claude-usage
+#
+# Logs: journalctl -u claude-usage -f
+#
+# Edit User= and the two paths below to match your checkout. They must be
+# absolute: %h is NOT usable here - in a system unit it resolves to /root
+# regardless of User=, which is the one specifier trap in this conversion.
+#
+# Settings live in config.toml next to the daemon - WorkingDirectory is what
+# makes that file discoverable. Run `uv sync` there first to create .venv.
+#
+# Why a system unit even though the daemon has to run as you: systemd
+# populates $USER, $LOGNAME, $HOME and $SHELL from the account database
+# whenever User= is set, so `claude` finds ~/.claude/.credentials.json as
+# itself and nothing runs as root or writes into your files. What a system
+# unit buys over a user one is that it needs no `loginctl enable-linger`
+# (invisible state living in /var/lib/systemd/linger, not in this repo) and
+# that it can order itself after the network - the user manager has no
+# network-online.target to order against at all.
+
+[Unit]
+Description=Claude usage daemon for the ESP32 display
+# After= only orders the two; without Wants= the target is never pulled in,
+# so the service could start before the Pi had an address.
+Wants=network-online.target
+After=network-online.target
+# Never stop restarting. The default gives up after 5 restarts in 10 s and
+# leaves the unit dead until someone notices - the one outcome this service
+# must not have.
+StartLimitIntervalSec=0
+
+[Service]
+User=schote
+WorkingDirectory=/home/schote/esp-display-apps/apps/claude-usage-monitor/daemon
+ExecStart=/home/schote/esp-display-apps/apps/claude-usage-monitor/daemon/.venv/bin/claude-usage-daemon
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

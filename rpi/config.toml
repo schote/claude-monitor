@@ -1,0 +1,37 @@
+# Copy to config.toml next to the daemon and edit. Every value is optional;
+# what is shown here is the built-in default.
+
+[claude]
+# Path to the Claude Code CLI. Leave unset to look it up on PATH and then
+# fall back to ~/.local/bin/claude - a systemd user service has a thin PATH,
+# so setting it explicitly is the reliable choice.
+# bin = "/home/schote/.local/bin/claude"
+
+# Directory the CLI is invoked in. Its throwaway session transcripts land in
+# a folder named after this path, which is what prune_sessions cleans up.
+workdir = "/tmp"
+
+# Only used to locate those transcripts.
+dir = "~/.claude"
+
+# Each poll leaves a ~2 KB session file behind even though it runs no model
+# turn. When true, the daemon deletes exactly the file for the session id
+# the CLI just reported, and nothing else.
+prune_sessions = true
+
+[poll]
+# Minimum seconds between CLI runs. Also the retry interval while the CLI is
+# failing, so a broken login cannot become a subprocess storm.
+ttl_s = 300
+
+# Give up on a hung CLI after this many seconds.
+cli_timeout_s = 60
+
+[server]
+# Dual-stack: the daemon builds the listening socket itself with
+# IPV6_V6ONLY cleared, so this one address answers IPv6 *and* IPv4 clients.
+# "0.0.0.0" binds IPv4 only, which makes the host unreachable by name from
+# any client that prefers the AAAA record - the classic "works through an
+# ssh tunnel, not over rpi.local:8000".
+host = "::"
+port = 8000
