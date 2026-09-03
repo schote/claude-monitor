@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Local, credential-bearing copies of the checked-in templates.
+# Keep esp/config.py and rpi/config.toml as placeholders in git.
+esp/config.local.py
+rpi/config.local.toml
